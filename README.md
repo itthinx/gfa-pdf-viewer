@@ -4,7 +4,7 @@ Integrates Groups File Access and PDF Viewer providing the [gfapdfviewer] shortc
 Usage Example:
 
 ```
-[gfapdfviewer width="600px" height="849px" beta="false" file_id="1" session_access="yes"][/pdfviewer]
+[gfapdfviewer file_id="1" session_access="yes"]
 ```
 
 The shortcode is a version of PDF Viewer's [pdfviewer] shortcode and accepts two required additional attributes:
