@@ -3,6 +3,10 @@
  * gfa-pdf-viewer.php
  *
  * Copyright (c) 2015 "kento" Karim Rahimpur www.itthinx.com
+ * 
+ * This plugin is based on content authored by Envigeek Web Services
+ * http://www.envigeek.com/ in its PDF Viewer plugin available
+ * at http://wordpress.org/plugins/pdf-viewer
  *
  * This code is released under the GNU General Public License.
  * See COPYRIGHT.txt and LICENSE.txt.
@@ -19,8 +23,8 @@
  * @since groups 1.0.0
  *
  * Plugin Name: GFA PDF Viewer
- * Plugin URI: http://www.itthinx.com/plugins/groups-file-access
- * Description: Integrates Groups File Access and PDF Viewer providing the [gfapdfviewer] shortcode version of [pdfviewer] shortcode for files protected by Groups File Access.
+ * Plugin URI: https://github.com/itthinx/gfa-pdf-viewer
+ * Description: Integrates <a href="http://www.itthinx.com/shop/groups-file-access/">Groups File Access</a> and <a href="http://wordpress.org/plugins/pdf-viewer/">PDF Viewer</a> providing the [gfapdfviewer] shortcode version of [pdfviewer] shortcode for files protected by <em>Groups File Access</em>.
  * Version: 1.0.0
  * Author: itthinx
  * Author URI: http://www.itthinx.com
@@ -28,12 +32,24 @@
  * License: GPLv3
  */
 
+/**
+ * GFA - PDF Viewer integration
+ */
 class GFA_PDF_Viewer {
-	
+
+	/**
+	 * Adds the shortcode.
+	 */
 	public static function init() {
 		add_shortcode( 'gfapdfviewer', array( __CLASS__, 'gfapdfviewer' ) );
 	}
 
+	/**
+	 * IE version helper.
+	 * 
+	 * @param string $version
+	 * @return boolean
+	 */
 	private static function older_ie($version) {
 		global $is_IE;
 		// Return early, if not IE
@@ -47,51 +63,50 @@ class GFA_PDF_Viewer {
 			return true;
 	}
 
+	/**
+	 * 
+	 * @param unknown $atts
+	 * @param string $content
+	 * @return Ambigous <string, mixed>|string
+	 */
 	public static function gfapdfviewer( $atts, $content = '' ) {
 
-// 		remove_shortcode( 'gfapdfviewer' );
-// 		$content = do_shortcode( $content );
-// 		add_shortcode( 'gfapdfviewer', array( __CLASS__, 'gfapdfviewer' ) );
+		if ( !class_exists( 'GFA_Shortcodes' ) ) {
+			return __( 'The <a href="http://www.itthinx.com/shop/groups-file-access/">Groups File Access</a> plugin is missing or not activated.', 'gfa-pdf-viewer' );
+		}
 
-// 		error_log( var_export( $content,true )); // @todo remove
-		
-		
-		$content = GFA_Shortcodes::groups_file_url( $atts );
-		$content = rawurlencode( $content );
-		
-		
-		error_log( var_export( $content,true )); // @todo remove
+		if ( !class_exists( 'PDFviewer' ) ) {
+			return __( 'The <a href="http://wordpress.org/plugins/pdf-viewer/">PDF Viewer</a> plugin is missing or not activated.', 'gfa-pdf-viewer' );
+		}
 
-		if ( !empty($content) ) {//&& filter_var($content, FILTER_VALIDATE_URL) ) {
-		
-			//TODO: filter URL to check if PDF only
-			$options = get_option('pdfviewer_options');
-			if ( self::older_ie($options['olderIE']) ) {
-		
-				$notice = str_replace('%%PDF_URL%%', $content, $options['ta_notice']);
-				echo html_entity_decode($notice);
-		
+		if ( isset( $atts['file_id'] ) ) {
+			$content = GFA_Shortcodes::groups_file_url( $atts );
+			$content = rawurlencode( $content );
+		} else {
+			$content = trim( $content );
+			remove_shortcode( 'gfapdfviewer' );
+			$content = do_shortcode( $content );
+			add_shortcode( 'gfapdfviewer', array( __CLASS__, 'gfapdfviewer' ) );
+		}
+
+		if ( !empty( $content ) ) {
+			$options = get_option( 'pdfviewer_options' );
+			if ( self::older_ie( $options['olderIE'] ) ) {
+				$notice = str_replace( '%%PDF_URL%%', $content, $options['ta_notice'] );
+				echo html_entity_decode( $notice );
 			} else {
-		
 				$atts = shortcode_atts(
-						array(
-								'width' => $options['tx_width'],
-								'height' => $options['tx_height'],
-								'beta' => empty($options['beta']) ? 0 : "true",
-						),
-						$atts,
-						'pdfviewer'
+					array(
+						'width' => $options['tx_width'],
+						'height' => $options['tx_height'],
+						'beta' => empty($options['beta']) ? 0 : "true",
+					),
+					$atts,
+					'pdfviewer'
 				);
-		
 				$pdfjs_mode = ( $atts['beta'] === "true" ) ? 'beta' : 'stable';
-				//$pdfjs_url = plugin_dir_url( __FILE__ ).$pdfjs_mode.'/web/viewer.html?file='.$content;
-				$pdfjs_url = plugins_url( 'pdf-viewer' ).'/'.$pdfjs_mode.'/web/viewer.html?file='.$content;
-				
-				
-				error_log( 'url = '.var_export( $pdfjs_url,true )); // @todo remove
-		
+				$pdfjs_url = plugins_url( 'pdf-viewer' ).'/'.$pdfjs_mode.'/web/viewer.html?file=' . $content;
 				$pdfjs_iframe = '<iframe class="pdfjs-viewer" width="'.$atts['width'].'" height="'.$atts['height'].'" src="'.$pdfjs_url.'"></iframe> ';
-		
 				return $pdfjs_iframe;
 			}
 		} else {
